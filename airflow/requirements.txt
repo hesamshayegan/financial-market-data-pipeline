@@ -1,0 +1,6 @@
+yfinance==0.2.48
+beautifulsoup4==4.12.3
+soupsieve==2.6
+psycopg2-binary==2.9.9
+sqlAlchemy
+pandas
