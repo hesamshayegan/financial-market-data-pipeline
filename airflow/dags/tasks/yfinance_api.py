@@ -25,7 +25,7 @@ def get_stock_history():
         try:
             df = stock.history(start="2014-01-01", end=None)
             if not df.empty:    
-                df['stock'] = stock_symbol
+                df['Stock'] = stock_symbol
                 df.index = df.index.tz_localize(None)
                 df = df.reset_index()
                 # drop all na values
@@ -40,13 +40,15 @@ def get_stock_history():
                 
     if all_stocks:
         combined = pd.concat(all_stocks, ignore_index=True)
-        return combined[['Date',
+        combined['ID'] = combined.index
+        return combined[['ID',
+                        'Date',
                         'Open',
                         'High',
                         'Low',
                         'Close',
                         'Volume',
-                        'stock']]
+                        'Stock']]
     
     else:
         print("No data available for the provided stocks.")
@@ -62,7 +64,7 @@ def get_yearly_income():
         try:
             df = stock.income_stmt.transpose()
             if not df.empty:
-                df['stock'] = stock_symbol
+                df['Stock'] = stock_symbol
                 # drop all na values
                 # df = df.dropna()
                 all_stocks_income.append(df)
@@ -76,11 +78,13 @@ def get_yearly_income():
         combined = pd.concat(all_stocks_income, axis=0, join='outer').reset_index()
         # Rename columns for clarity
         combined.rename(columns={'index': 'Date'}, inplace=True)
-        return combined[['Date', 
+        combined['ID'] = combined.index
+        return combined[['ID',
+                        'Date', 
                         'Gross Profit', 
                         'Total Revenue',
                         'Diluted EPS',
-                        'stock']]
+                        'Stock']]
     else:
         print("No data available for the provided stocks.")
         return pd.DataFrame()
@@ -96,7 +100,7 @@ def get_quarterly_income():
         try:
             df = stock.quarterly_income_stmt.transpose()
             if not df.empty:
-                df['stock'] = stock_symbol
+                df['Stock'] = stock_symbol
                 # drop all na values
                 # df = df.dropna()
                 all_stocks_income.append(df)
@@ -110,10 +114,13 @@ def get_quarterly_income():
         combined = pd.concat(all_stocks_income, axis=0, join='outer').reset_index()
         # Rename columns for clarity
         combined.rename(columns={'index': 'Date'}, inplace=True)
-        return combined[['Date', 
+        combined['ID'] = combined.index
+        return combined[['ID',
+                        'Date',
                         'Gross Profit', 
                         'Total Revenue',
-                        'stock']]
+                        'Diluted EPS',
+                        'Stock']]
     else:
         print("No data available for the provided stocks.")
         return pd.DataFrame()

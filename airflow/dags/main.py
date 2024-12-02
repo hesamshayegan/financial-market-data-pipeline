@@ -7,6 +7,13 @@ import os
 from tasks.nasdaq_webscraping import get_stock_statistics
 from tasks.yfinance_api import get_stock_history, get_yearly_income, get_quarterly_income, stocks
 from tasks.create_psql_db import create_table_1, create_table_2, create_table_3, create_table_4
+from tasks.precleaned_data import (
+    create_date_format_task,
+    remove_null_values,
+    remove_data_web_duplicates,
+    remove_stocks_api_duplicates
+)
+
 
 
 
@@ -69,6 +76,7 @@ def get_stocks_data():
                     print(f"An error occured: {e}")
 
 
+
     with TaskGroup(group_id = 'group_a', tooltip= "Extract_from_yfinanceAPI") as group_API:
         stock_history = get_stock_history_from_api()
         stocks_yearly_income = get_yearly_income_from_api()
@@ -84,39 +92,41 @@ def get_stocks_data():
         load_quarterly_income = load_stock_data_to_psqldb(stocks_quarterly_income, 'stocks_quarterly_income')
         load_data_from_web = load_stock_data_to_psqldb(stock_data_from_web, 'stocks_data_web')
 
-
         # dependencies within group_db
         create_table_1 >> load_stock_history
         create_table_2 >> load_yearly_income
         create_table_3 >> load_quarterly_income
         create_table_4 >> load_data_from_web
 
-    
+
+    with TaskGroup(group_id='group_clean', tooltip="cleaning_stage") as group_clean:
+        
+        tablenames = ['stocks_history', 'stocks_yearly_income', 'stocks_quarterly_income', 'stocks_data_web']
+        formatted_date_tasks = create_date_format_task(tablenames)
+        # add each task to the taskgroup
+        for formatted_date_task in formatted_date_tasks:
+            formatted_date_task
+
+        tablenames_income = ['stocks_yearly_income', 'stocks_quarterly_income']
+
+        remove_null_value_tasks = remove_null_values(tablenames_income)
+        for remove_null_value_task in remove_null_value_tasks:
+            remove_null_value_task
+        
+
+        # remove duplicates
+        tablenames_duplicates_api = ['stocks_history', 'stocks_yearly_income', 'stocks_quarterly_income']
+        removed_duplicate_values = remove_stocks_api_duplicates(tablenames_duplicates_api)
+        for removed_duplicate_value in removed_duplicate_values:
+            removed_duplicate_value
+
+        removed_web_data_duplicates = remove_data_web_duplicates('stocks_data_web')
+        removed_web_data_duplicates
+
 
     # pipeline's overall structure
-    start_pipeline >> group_API >> group_staging >> end_pipeline
-    start_pipeline >> group_webscraping >> group_staging >> end_pipeline
+    start_pipeline >> group_API >> group_staging >> group_clean >> end_pipeline
+    start_pipeline >> group_webscraping >> group_staging >> group_clean >> end_pipeline
     
 
 get_stocks_data()
-
-
-# stocks = ['AAPL', 'AMZN', 'MSFT']
-
-# print(get_stock_statistics(stocks))
-# def test():
-#     all_data = []
-#     for stock_syb in stocks:
-#         stock = yf.Ticker(stock_syb)
-#         df = stock.income_stmt.transpose()
-#         df['Stock'] = stock_syb
-
-#         all_data.append(df)
-
-#     combined = pd.concat(all_data, ignore_index=True)
-#     return combined[['Gross Profit', 'Total Revenue', 'Diluted EPS', 'Stock']]
-
-
-# result = test()
-# print(result)
-

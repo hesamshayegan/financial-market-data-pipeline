@@ -3,7 +3,7 @@ import requests
 import pandas as pd
 import datetime
 
-# Write a try and catch error if the stock symbol doesn't exist here
+
 def check_stock_symbol(stocks):
     valid_symbols = []
     for stock in stocks:
@@ -20,7 +20,7 @@ def check_stock_symbol(stocks):
     
     return valid_symbols
       
-current_time = datetime.datetime.now()
+
 statistics = []
 
 def get_stock_statistics(stocks):
@@ -31,6 +31,7 @@ def get_stock_statistics(stocks):
         print("The list is empty")
         return None
     
+    id = 0
     for stock in valid_symbols:
         url = f"https://www.google.com/finance/quote/{stock}:NASDAQ"
         headers = {'User-Agent': 'Mozilla/5.0'}
@@ -44,10 +45,12 @@ def get_stock_statistics(stocks):
             pe = 0
             dividend = 0
             
+
             stats_table = soup.find(class_="eYanAe")
 
-            for row in stats_table.find_all('div'): 
+            for row in stats_table.find_all('div'):
                 if len(row.find_all('div')) > 2:
+                    current_time = datetime.datetime.now()
                     label = row.find_all('div')[0].text
                     value = row.find_all('div')[2].text
                     if row.find_all('div')[0].text == 'Market cap':
@@ -57,27 +60,14 @@ def get_stock_statistics(stocks):
                         
                     elif label == 'Dividend yield':
                         dividend = str(value) if value != '-' else '0'
-                        
-            statistics.append({"Date": current_time, "Market Cap": market_cap, "PEratio": pe, "Dividend": dividend, "Stock": stock})
+            
+            id += 1
+
+            statistics.append({"ID": id, "Date": current_time, "Market Cap": market_cap, "PEratio": pe, "Dividend": dividend, "Stock": stock})
 
         else:
             print(f"Error fetching data for {stock}")
 
     statistics_df = pd.DataFrame(statistics)
 
-    return statistics_df[["Date", "Market Cap", "PEratio", "Dividend", "Stock"]]
-
-
-
-# stocks = ['xy', 'amzn', 'abcd', 'msft', 'unknown', 'amzn']
-# print('all symbols', stocks)
-# valid_symbols = check_stock_symbol(stocks)
-# print('cleaned', valid_symbols) 
-# stocks_statistics = get_stock_statistics(valid_symbols)
-# print(stocks_statistics)
-# print(stocks_statistics.shape)
-# print(stocks_statistics['Market Cap'].dtypes)
-# print(stocks_statistics['PEratio'].dtypes)
-# print(stocks_statistics['Dividend'].dtypes)
-# print(stocks_statistics['Stock'].dtypes)
-
+    return statistics_df[["ID", "Date", "Market Cap", "PEratio", "Dividend", "Stock"]]

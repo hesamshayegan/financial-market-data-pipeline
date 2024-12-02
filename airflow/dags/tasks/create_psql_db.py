@@ -6,6 +6,7 @@ create_table_1 = PostgresOperator(
     postgres_conn_id="postgres_conn",
     sql='''
         CREATE TABLE IF NOT EXISTS stocks_history (
+            "ID" NUMERIC,
             "Date" DATE,
             "Open" FLOAT,
             "High" FLOAT,
@@ -24,6 +25,7 @@ task_id='tsk_create_table_2',
 postgres_conn_id="postgres_conn",
 sql='''
     CREATE TABLE IF NOT EXISTS stocks_yearly_income (
+        "ID" NUMERIC,
         "Date" DATE,
         "Gross Profit" FLOAT,
         "Total Revenue" FLOAT,
@@ -40,9 +42,11 @@ task_id='tsk_create_table_3',
 postgres_conn_id="postgres_conn",
 sql='''
     CREATE TABLE IF NOT EXISTS stocks_quarterly_income (
+        "ID" NUMERIC,
         "Date" DATE,
         "Gross Profit" FLOAT,
         "Total Revenue" FLOAT,
+        "Diluted EPS" FLOAT,
         "Stock" VARCHAR (10)
     );
 ''',
@@ -55,9 +59,10 @@ task_id='tsk_create_table_4',
 postgres_conn_id="postgres_conn",
 sql='''
     CREATE TABLE IF NOT EXISTS stocks_data_web (
+        "ID" NUMERIC,
         "Date" DATE,
-        "Market Cap Profit" FLOAT,
-        "PEratio Revenue" FLOAT,
+        "Market Cap" FLOAT,
+        "PEratio" FLOAT,
         "Dividend" FLOAT,
         "Stock" VARCHAR (10)
     );
