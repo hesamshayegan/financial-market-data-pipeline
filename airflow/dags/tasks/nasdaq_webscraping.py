@@ -3,6 +3,7 @@ import requests
 import pandas as pd
 import datetime
 
+current_time = datetime.datetime.now()
 
 def check_stock_symbol(stocks):
     valid_symbols = []
@@ -50,7 +51,6 @@ def get_stock_statistics(stocks):
 
             for row in stats_table.find_all('div'):
                 if len(row.find_all('div')) > 2:
-                    current_time = datetime.datetime.now()
                     label = row.find_all('div')[0].text
                     value = row.find_all('div')[2].text
                     if row.find_all('div')[0].text == 'Market cap':

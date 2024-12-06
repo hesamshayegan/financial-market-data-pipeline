@@ -49,11 +49,11 @@ x-airflow-common:
   # In order to add custom dependencies or upgrade provider packages you can use your extended image.
   # Comment the image line, place your Dockerfile in the directory where you placed the docker-compose.yaml
   # and uncomment the "build" line below, Then run `docker-compose build` to build the images.
-  image: ${AIRFLOW_IMAGE_NAME:-extending_airflow:latest}
+  # image: ${AIRFLOW_IMAGE_NAME:-extending_airflow:latest}
   # View build details: docker-desktop://dashboard/build/desktop-linux/desktop-linux/397d6qr72jp9m931hgcb80ri8
   # image: ${AIRFLOW_IMAGE_NAME:-extending_airflow:latest}
   # View build details: docker-desktop://dashboard/build/desktop-linux/desktop-linux/zdyvw35e4lsqtsskrayu9aoaq
-  # build: .
+  build: .
   environment:
     &airflow-common-env
     AIRFLOW__CORE__EXECUTOR: CeleryExecutor
