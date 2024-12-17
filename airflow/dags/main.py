@@ -5,18 +5,27 @@ from airflow.utils.task_group import TaskGroup
 from sqlalchemy import create_engine
 from tasks.nasdaq_webscraping import get_stock_statistics
 from tasks.yfinance_api import get_stock_history, get_yearly_income, get_quarterly_income, stocks
-from tasks.create_psql_db import create_table_1, create_table_2, create_table_3, create_table_4
+from tasks.create_psql_db import (
+load_history_data,
+load_income_data,
+load_web_data
+)
+
 from tasks.duckdb_queries import(
     create_formatted_date, 
     remove_null_values,
     remove_duplicates,
+    create_pe_ratios_csv,
+    create_stock_history_csv,
+    create_current_pe_ratios_csv,
+    create_stocks_yearly_income_csv,
+    create_stocks_quarterly_income_csv
 )
 
 
 @dag(
     start_date=datetime.today(),
     schedule_interval="@daily",
-    tags=["extract"],
     catchup=False
 )
 
@@ -58,20 +67,22 @@ def get_stocks_data():
         statistics_df = get_stock_statistics(stocks)
 
         return statistics_df
+
     
     @task
-    def load_stock_data_to_psqldb(df, table_name):
-        db_url = 'postgresql+psycopg2://postgres@host.docker.internal:5432/docker_db'
-        engine = create_engine(db_url)
+    def load_stock_history_to_db(df, table_name):
+        result = load_history_data(df, table_name)
 
-        try:
-            with engine.begin() as connections:
-                df.to_sql(name=table_name, con=connections, index=False, if_exists='replace')
-            print(f"Data uploaded successfully to table: {', '.join(table_name)}")
-        except Exception as e:
-                print(f"An error occured: {e}")
+    @task
+    def load_stock_income_to_db(df, table_name):
+        result = load_income_data(df, table_name)
 
-    # duckdb stage
+    @task
+    def load_stock_web_to_db(df, table_name):
+        result = load_web_data(df, table_name)
+    
+
+    #duckdb stage
     @task
     def format_dates():
         tablenames = ['stocks_history', 'stocks_yearly_income', 'stocks_quarterly_income', 'stocks_data_web']
@@ -87,6 +98,27 @@ def get_stocks_data():
         tablenames = ['stocks_history', 'stocks_yearly_income', 'stocks_quarterly_income', 'stocks_data_web']
         result = remove_duplicates(tablenames)
 
+    @task
+    def create_petable_output():
+        result = create_pe_ratios_csv()
+
+    @task
+    def create_stock_history_output():
+        result = create_stock_history_csv()
+
+    @task
+    def create_current_pe_ratios_table():
+        result = create_current_pe_ratios_csv()
+
+    @task
+    def create_stocks_yearly_income_table():
+        result = create_stocks_yearly_income_csv()
+
+    @task
+    def create_stocks_quarterly_income_table():
+        result = create_stocks_quarterly_income_csv()
+
+
     with TaskGroup(group_id = 'group_a', tooltip= "Extract_from_yfinanceAPI") as group_API:
         stock_history = get_stock_history_from_api()
         stocks_yearly_income = get_yearly_income_from_api()
@@ -97,18 +129,12 @@ def get_stocks_data():
 
     with TaskGroup(group_id='group_staging', tooltip="staging_area") as group_staging:
         
-        load_stock_history = load_stock_data_to_psqldb(stock_history, 'stocks_history')
-        load_yearly_income = load_stock_data_to_psqldb(stocks_yearly_income, 'stocks_yearly_income')
-        load_quarterly_income = load_stock_data_to_psqldb(stocks_quarterly_income, 'stocks_quarterly_income')
-        load_data_from_web = load_stock_data_to_psqldb(stock_data_from_web, 'stocks_data_web')
+        load_stock_history_to_db(stock_history, 'stocks_history')
+        load_stock_income_to_db(stocks_yearly_income, 'stocks_yearly_income')
+        load_stock_income_to_db(stocks_quarterly_income, 'stocks_quarterly_income')
+        load_stock_web_to_db(stock_data_from_web, 'stocks_data_web')
 
-        # dependencies within group_db
-        create_table_1 >> load_stock_history
-        create_table_2 >> load_yearly_income
-        create_table_3 >> load_quarterly_income
-        create_table_4 >> load_data_from_web
 
-    
     with TaskGroup(group_id='group_duckdb', tooltip="duckdb_stage") as group_duckdb:
         formatted_date = format_dates()
         removed_null_values = clean_null_values()
@@ -116,10 +142,19 @@ def get_stocks_data():
         
         formatted_date >> removed_null_values >> removed_duplicates
 
-    
-    # pipeline's overall structure
-    start_pipeline >> group_API >> group_staging >> group_duckdb >> end_pipeline
-    start_pipeline >> group_webscraping >> group_staging >> group_duckdb >> end_pipeline
+    with TaskGroup(group_id='group_output', tooltip="output_stage") as group_output:
+        petable_results = create_petable_output()
+        stocks_history_results = create_stock_history_output()
+        current_pe_results = create_current_pe_ratios_table()
+        stocks_yearly_income_results = create_stocks_yearly_income_table()
+        stocks_quarterly_income_results = create_stocks_quarterly_income_table()
+
+        stocks_history_results >> petable_results >> current_pe_results >> stocks_yearly_income_results >> stocks_quarterly_income_results
+
+
+    #pipeline's overall structure
+    start_pipeline >> group_API >> group_staging >> group_duckdb >> group_output >> end_pipeline
+    start_pipeline >> group_webscraping >> group_staging >> group_duckdb >> group_output >> end_pipeline
     
 
 get_stocks_data()

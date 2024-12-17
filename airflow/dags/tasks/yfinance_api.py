@@ -2,8 +2,6 @@ import pandas as pd
 import yfinance as yf
 import os
 
-
-
 # get the directory of the current file
 current_dir = os.path.dirname(os.path.abspath(__file__))
 
@@ -28,8 +26,6 @@ def get_stock_history():
                 df['Stock'] = stock_symbol
                 df.index = df.index.tz_localize(None)
                 df = df.reset_index()
-                # drop all na values
-                # df = df.dropna()
                 all_stocks.append(df)
                 print(f"Stock history for {stock_symbol} was successfully extracted")
             else:
@@ -55,7 +51,6 @@ def get_stock_history():
         return pd.DataFrame()
     
 
-
 def get_yearly_income():
     all_stocks_income = []
     for stock_symbol in stocks:  
@@ -65,8 +60,6 @@ def get_yearly_income():
             df = stock.income_stmt.transpose()
             if not df.empty:
                 df['Stock'] = stock_symbol
-                # drop all na values
-                # df = df.dropna()
                 all_stocks_income.append(df)
             else:
                 print(f"No income data for {stock_symbol}")
@@ -74,9 +67,7 @@ def get_yearly_income():
             print(f"Error retrieving data for {stock_symbol}: {e}")
     
     if all_stocks_income:
-        # Combine all DataFrames, aligning on all dates (outer join)
         combined = pd.concat(all_stocks_income, axis=0, join='outer').reset_index()
-        # Rename columns for clarity
         combined.rename(columns={'index': 'Date'}, inplace=True)
         combined['ID'] = combined.index
         return combined[['ID',
@@ -90,8 +81,6 @@ def get_yearly_income():
         return pd.DataFrame()
 
 
-
-# get quartely income 
 def get_quarterly_income():
     all_stocks_income = []
     for stock_symbol in stocks:  
@@ -101,8 +90,6 @@ def get_quarterly_income():
             df = stock.quarterly_income_stmt.transpose()
             if not df.empty:
                 df['Stock'] = stock_symbol
-                # drop all na values
-                # df = df.dropna()
                 all_stocks_income.append(df)
             else:
                 print(f"No income data for {stock_symbol}")
@@ -110,9 +97,7 @@ def get_quarterly_income():
             print(f"Error retrieving data for {stock_symbol}: {e}")
     
     if all_stocks_income:
-        # Combine all DataFrames, aligning on all dates (outer join)
         combined = pd.concat(all_stocks_income, axis=0, join='outer').reset_index()
-        # Rename columns for clarity
         combined.rename(columns={'index': 'Date'}, inplace=True)
         combined['ID'] = combined.index
         return combined[['ID',

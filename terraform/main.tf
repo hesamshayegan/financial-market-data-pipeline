@@ -40,6 +40,14 @@ resource "aws_vpc_security_group_ingress_rule" "allow_ssh_ipv4" {
   to_port           = 22
 }
 
+resource "aws_vpc_security_group_ingress_rule" "allow_postgres" {
+  security_group_id = aws_security_group.allow_sg.id
+  cidr_ipv4         = "0.0.0.0/0"
+  from_port         = 5432
+  ip_protocol       = "tcp"
+  to_port           = 5432
+}
+
 # Allow all outbound traffic
 resource "aws_vpc_security_group_egress_rule" "allow_all_traffic_ipv4" {
   security_group_id = aws_security_group.allow_sg.id
@@ -63,7 +71,7 @@ resource "aws_key_pair" "existing_key" {
 # ami tells that which os will be used: here is Ubuntu
 # sg reads the id after sg is created above
 resource "aws_instance" "financial-piepeline-instance" {
-  instance_type          = "t2.small"
+  instance_type          = "t2.medium"
   ami                    = data.aws_ami.financial-pipeline.id
   vpc_security_group_ids = [aws_security_group.allow_sg.id]
   key_name      = aws_key_pair.existing_key.key_name
