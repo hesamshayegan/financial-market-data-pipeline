@@ -4,6 +4,18 @@ The **Financial Market Pipeline** is a data pipeline designed to streamline the 
 
 This guide will walk you through setting up the development environment, configuring Airflow, and connecting to essential resources like AWS RDS and S3.
 
+## How the pipeline works?
+To track specific stocks, a list of desired stocks must be provided in CSV format and placed in the `input` folder within the `dags` directory. The entire pipeline is orchestrated using Apache Airflow. The pipeline then performs the following steps:
+
+1. **Data Extraction**: It collects data for the specified stocks using the Yahoo Finance API and custom web scraping scripts.
+2. **Staging**: The extracted data is stored in an AWS RDS instance as a staging area.
+3. **Data Cleaning and Querying**: DuckDB is used to clean and process the data.
+4. **Final Output**: The processed data is saved as CSV files in an AWS S3 bucket.
+5. **Further Analysis**: The final data can be used for additional analysis and visualization in tools like Tableau.
+
+This pipeline ensures a seamless workflow from raw data collection to actionable insights for financial analysis.
+
+
 ## Setting Up the Environment
 To get started, follow the steps below to prepare your infrastructure and Airflow environment.
 
@@ -138,3 +150,37 @@ Log in using the admin credentials you created earlier.
 ## Notes
 - Ensure the AWS instance security group allows inbound traffic on port `8080` for accessing the Airflow UI.
 - Replace all placeholder values (`your-access-key-id`, `your-region`, etc.) with your actual configuration details.
+
+
+## The piepeline overall structure in Airflow
+![airflow-data-pipeline-structure](./imgs/airflow_structure.png)
+
+## The Tableau results
+![financial-data-pipeline-dashboard](./imgs/dashboard_result.png)
+
+## Challenegs and what I learned from them?
+
+### Handling Invalid Stock Symbols
+One of the challenges faced during development was dealing with cases where the HTTP status code returned was 200, but the input stock symbol was invalid. This caused unnecessary requests to the web scraping function and led to errors or incomplete data extraction.
+
+To address this issue, I implemented a pre-validation step for stock symbols before sending requests for data extraction. By checking the validity of stock symbols in advance using a lightweight script, I was able to ensure that only valid symbols were passed on to the web scraping function. This not only improved the accuracy of the pipeline but also optimized its performance by reducing redundant requests.
+
+For example, the validation logic identifies valid stock symbols by making a preliminary request to verify their existence on the NASDAQ listing. If a stock symbol is confirmed to be valid, it is added to the processing queue. This approach is encapsulated in the script `nasdaq_webscraping.py`, which forms a key component of the pipeline's preprocessing stage.
+
+This process helped me better understand the importance of input validation and designing robust pre-processing mechanisms to handle edge cases in data pipelines.
+
+### Concurrency Issues with DuckDB
+Another challenge was handling concurrency problems with the in-memory DuckDB database. DuckDB does not natively support multiple processes writing to the same database file concurrently. When parallel tasks in Airflow attempted to access the database simultaneously, the following issues were observed:
+
+1. **Database Lock Errors**: One process would lock the database, preventing others from accessing it, causing errors like: `Could not set lock on file ... Conflicting lock is held.`
+2. **Missing Tables**: Tasks dependent on previous ones would fail due to incomplete table creation, showing errors like: `Table with name cleaned_stocks_yearly_income does not exist!`
+
+To resolve this:
+1. **Persistent Storage**: To address the concurrency issue with DuckDB more effectively, I also switched from using an in-memory database to a persistent mode database. This change ensures that the database state is stored on disk, allowing tasks to access the same consistent data without conflicts.
+2. **Open/Close Connections**: Each task now explicitly opens and closes its connection to the DuckDB database, ensuring no lingering locks.
+3. **Task Dependencies**: Proper task dependencies were enforced in Airflow. For instance, the `create_formatted_date()` task is set to complete successfully before the `remove_null_values()` task starts, ensuring all required tables exist and are accessible.
+
+This solution not only resolved the concurrency issue but also reinforced the importance of designing pipelines with clear task dependencies and efficient resource management.
+
+
+

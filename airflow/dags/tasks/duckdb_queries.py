@@ -28,14 +28,14 @@ def create_formatted_date(tablenames):
 
                     duckdb_conn = duckdb.connect(database=DUCKDB_PATH, read_only=False)
 
-                    initial_count_query = f"SELECT COUNT(*) AS count FROM cleaned_{tablename};"
-                    initial_rows = duckdb_conn.sql(initial_count_query).fetchone()[0]
-
                     drop_table = f"DROP TABLE IF EXISTS cleaned_{tablename};"
                     duckdb_conn.execute(drop_table)
 
                     create_table = f"CREATE TABLE cleaned_{tablename} AS SELECT * FROM df_rds_table;"
                     duckdb_conn.execute(create_table)
+
+                    initial_count_query = f"SELECT COUNT(*) AS count FROM cleaned_{tablename};"
+                    initial_rows = duckdb_conn.sql(initial_count_query).fetchone()[0]
 
                     add_column = f"ALTER TABLE cleaned_{tablename} ADD COLUMN IF NOT EXISTS formatted_date DATE;"
                     duckdb_conn.execute(add_column)
