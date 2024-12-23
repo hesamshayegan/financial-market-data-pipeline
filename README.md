@@ -4,6 +4,9 @@ The **Financial Market Pipeline** is a data pipeline designed to streamline the 
 
 This guide will walk you through setting up the development environment, configuring Airflow, and connecting to essential resources like AWS RDS and S3.
 
+
+Here's the project walkthrough video: *[financial-data-pipeline-video](https://drive.google.com/file/d/1VB3eIfwOspkHoDYjEjO8d1ZlL-ltPeq-/view?usp=sharing)*
+
 ## How the pipeline works?
 To track specific stocks, a list of desired stocks must be provided in CSV format and placed in the `input` folder within the `dags` directory. The entire pipeline is orchestrated using Apache Airflow. The pipeline then performs the following steps:
 
