@@ -17,7 +17,7 @@ To track specific stocks, a list of desired stocks must be provided in CSV forma
 5. **Further Analysis**: The final data can be used for additional analysis and visualization in tools like Tableau.
 
 This pipeline ensures a seamless workflow from raw data collection to actionable insights for financial analysis.
-
+![financial-data-pipeline-flowchart](./imgs/pipeline-flowchart.png)
 
 ## Setting Up the Environment
 To get started, follow the steps below to prepare your infrastructure and Airflow environment.
